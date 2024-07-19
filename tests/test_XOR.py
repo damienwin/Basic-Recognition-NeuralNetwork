@@ -2,8 +2,8 @@ import unittest
 import numpy as np
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.NeuralNetwork import forward_propagation, nn_model
 
 class TestNN(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestNN(unittest.TestCase):
         n_y = Y.shape[0]
 
         # Train the neural network
-        parameters = nn_model(X, Y, n_x, n_h, n_y)
+        parameters = nn_model(X, Y, n_x, n_h, n_y, learning_rate=.1)
 
         # Make predictions on the XOR dataset
         A2 = forward_propagation(X, parameters)[0]
