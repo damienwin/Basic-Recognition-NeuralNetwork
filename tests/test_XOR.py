@@ -13,13 +13,8 @@ class TestNN(unittest.TestCase):
                       [0, 1, 0, 1]])
         Y = np.array([[0, 1, 1, 0]])
 
-        # Define layer sizes
-        n_x = X.shape[0]
-        n_h = 4
-        n_y = Y.shape[0]
-
         # Train the neural network
-        parameters = nn_model(X, Y, n_x, n_h, n_y, learning_rate=.1)
+        parameters = nn_model(X, Y, n_h=4, learning_rate=.1)
 
         # Make predictions on the XOR dataset
         A2 = forward_propagation(X, parameters)[0]

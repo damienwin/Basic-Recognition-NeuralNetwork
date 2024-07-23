@@ -16,12 +16,8 @@ X, Y = sk.make_moons(n_samples=100, shuffle=True, noise=.3, random_state=None)
 X = X.T
 Y = Y[np.newaxis, :]
 
-n_x = X.shape[0]
-n_h = 4
-n_y = Y.shape[0]
-
 # Train neural network model
-parameters = nn_model(X, Y, n_x, n_h, n_y, learning_rate=.33)
+parameters = nn_model(X, Y, n_h=5, learning_rate=.33)
 
 def predict(X, parameters):
     A2, _ = forward_propagation(X.T, parameters)
@@ -42,8 +38,8 @@ def plot_decision_boundary(X, Y, parameters):
     # Plot decision boundary
     plt.contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.RdYlBu)
     plt.scatter(X[0, :], X[1, :], c=Y.ravel(), s=30, cmap=plt.cm.RdYlBu, edgecolor='k')
-    plt.xlabel('Feature 1')
-    plt.ylabel('Feature 2')
+    plt.xlabel('x1')
+    plt.ylabel('x2')
     plt.title('Decision Boundary and Data Points')
     plt.show()
 

@@ -83,7 +83,9 @@ def update_parameters(parameters, grads, learning_rate):
 
     return parameters
 
-def nn_model(X, Y, n_x, n_h, n_y, learning_rate):
+def nn_model(X, Y, n_h, learning_rate):
+    n_x = X.shape[0]
+    n_y = Y.shape[0]
     num_iterations = 10000
     parameters = initialize_params(n_x, n_h, n_y)
 

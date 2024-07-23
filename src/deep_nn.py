@@ -144,3 +144,19 @@ def update_parameters(parameters, grads, learning_rate):
         
     return parameters
 
+def deep_nn_model(X, Y, num_iterations, layer_dims, learning_rate):
+    costs = []
+    parameters = initialize_layer_parameters(layer_dims)
+
+    for i in range(0, num_iterations):
+        AL, caches = forward_propagation(X, parameters)
+        cost = cost_function(AL, Y)
+        grads = backward_propagation(AL, Y, caches)
+        parameters = update_parameters(parameters, grads, learning_rate)
+
+        if print_cost and i % 100 == 0 or i == num_iterations - 1:
+            print("Cost after iteration {}: {}".format(i, np.squeeze(cost)))
+        if i % 100 == 0 or i == num_iterations:
+            costs.append(cost)
+
+    return parameters, costs
