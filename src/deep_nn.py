@@ -24,29 +24,36 @@ def relu(Z):
     cache = Z
     return A, cache
 
-def sigmoid_backward(dA, activation_cache):
-    dZ = dA * (1 - np.power(activation_cache, 2))
-
-    return dZ
-
-def relu_backward(dA, activation_cache):
+def relu_backward(dA, cache):
+    Z = cache
     dZ = np.array(dA, copy=True)
-    dZ[activation_cache <= 0] = 0
+    dZ[Z <= 0] = 0
 
+    assert (dZ.shape == Z.shape)
+    
     return dZ
 
-def forward_linear(W, A, b):
+def sigmoid_backward(dA, cache):
+    Z = cache
+    s = 1/(1+np.exp(-Z))
+    dZ = dA * s * (1-s)
+    
+    assert (dZ.shape == Z.shape)
+    
+    return dZ
+
+def forward_linear(A, W, b):
     Z = np.dot(W, A) + b
-    cache = (W, A, b)
+    cache = (A, W, b)
 
     return Z, cache
 
 def forward_activation(A_prev, W, b, activation):
     if activation == "sigmoid":
-        Z, linear_cache = forward_linear(W, A_prev, b)
+        Z, linear_cache = forward_linear(A_prev, W, b)
         A, activation_cache = sigmoid(Z)
     elif activation == "relu":
-        Z, linear_cache = forward_linear(W, A_prev, b)
+        Z, linear_cache = forward_linear(A_prev, W, b)
         A, activation_cache = relu(Z)
     else:
         raise ValueError("Invalid activation function!")
@@ -63,15 +70,11 @@ def forward_propagation(X, parameters):
     # Forward propagation for each layer
     for l in range(1, L):
         A_prev = A
-        W = parameters['W' + str(l)]
-        b = parameters['b' + str(l)]
-        A, cache = forward_activation(A_prev, W, b, "relu")
+        A, cache = forward_activation(A_prev, parameters['W' + str(l)], parameters['b' + str(l)], activation="relu")
         caches.append(cache)
 
-    W = parameters['W' + str(L)]
-    b = parameters['b' + str(L)]
     #AL is final output layer
-    AL, cache = forward_activation(A, W, b, "sigmoid")
+    AL, cache = forward_activation(A, parameters['W' + str(L)], parameters['b' + str(L)], "sigmoid")
     caches.append(cache)
 
     return AL, caches
@@ -83,14 +86,14 @@ def cost_function(AL, Y):
     return cost
 
 def backward_linear(dZ, cache):
-    W, A_prev, b = cache
+    A_prev, W, b = cache
     m = A_prev.shape[1]
 
     dW = 1/m * np.dot(dZ, A_prev.T)
     db = 1/m * np.sum(dZ, axis=1, keepdims=True)
     dA_prev = np.dot(W.T, dZ)
 
-    return dW, dA_prev, db
+    return dA_prev, dW, db
 
 def backward_activation(dA, cache, activation):
     linear_cache, activation_cache = cache
@@ -107,12 +110,9 @@ def backward_activation(dA, cache, activation):
 
     return dW, dA_prev, db
 
-# GRADED FUNCTION: L_model_backward
-
 def backward_propagation(AL, Y, caches):
     grads = {}
     L = len(caches)
-    m = AL.shape[1]
     Y = Y.reshape(AL.shape)
     
     # Back propagation of output layer
@@ -120,16 +120,16 @@ def backward_propagation(AL, Y, caches):
 
     # Gradient descent of output layer
     current_cache = caches[L - 1]
-    dA_prev_temp, dW_temp, db_temp = backward_activation(dAL, current_cache, "sigmoid")
-    grads["dA" + str(L-1)] = dA_prev_temp
+    dW_temp, dA_prev_temp, db_temp = backward_activation(dAL, current_cache, "sigmoid")
     grads["dW" + str(L)] = dW_temp
+    grads["dA" + str(L-1)] = dA_prev_temp
     grads["db" + str(L)] = db_temp
 
     # Store gradient descent for remaining layers
     for l in reversed(range(L-1)):
-        dA_prev_temp, dW_temp, db_temp = backward_activation(grads["dA" + str(l+1)], caches[l], "relu")
-        grads["dA" + str(l)] = dA_prev_temp
+        dW_temp, dA_prev_temp, db_temp = backward_activation(grads["dA" + str(l+1)], caches[l], "relu")
         grads["dW" + str(l + 1)] = dW_temp
+        grads["dA" + str(l)] = dA_prev_temp  
         grads["db" + str(l + 1)] = db_temp
 
     return grads
@@ -154,7 +154,7 @@ def deep_nn_model(X, Y, num_iterations, layer_dims, learning_rate):
         grads = backward_propagation(AL, Y, caches)
         parameters = update_parameters(parameters, grads, learning_rate)
 
-        if print_cost and i % 100 == 0 or i == num_iterations - 1:
+        if i % 100 == 0 or i == num_iterations - 1:
             print("Cost after iteration {}: {}".format(i, np.squeeze(cost)))
         if i % 100 == 0 or i == num_iterations:
             costs.append(cost)
