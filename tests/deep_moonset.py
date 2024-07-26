@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import os
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.deep_nn import forward_propagation, deep_nn_model
 
@@ -18,7 +17,7 @@ Y = Y[np.newaxis, :]
 
 # Train neural network model
 layer_dims = [2, 10, 5, 1]
-parameters, _ = deep_nn_model(X, Y, num_iterations=1000, layer_dims=layer_dims, learning_rate=1)
+parameters, _ = deep_nn_model(X, Y, num_iterations=1000, layer_dims=layer_dims, learning_rate=.33, classification_method="binary")
 
 def predict(X, parameters):
     A2, _ = forward_propagation(X.T, parameters)

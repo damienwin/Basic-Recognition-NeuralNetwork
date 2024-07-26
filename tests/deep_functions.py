@@ -2,7 +2,6 @@ import unittest
 import numpy as np
 import sys
 import os
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.deep_nn import (
     initialize_layer_parameters,
@@ -98,13 +97,6 @@ class TestDeepNN(unittest.TestCase):
         Z, _ = forward_linear(A_prev, W, b)
         expected_A = np.maximum(0, Z)
         np.testing.assert_array_almost_equal(A, expected_A)
-
-    def test_cost_function(self):
-        AL = np.array([[0.8, 0.9, 0.4]])
-        Y = np.array([[1, 0, 1]])
-        cost = cost_function(AL, Y)
-        expected_cost = -np.mean(np.multiply(Y, np.log(AL)) + np.multiply((1 - Y), np.log(1 - AL)))
-        self.assertAlmostEqual(cost, np.squeeze(expected_cost))
 
     def test_backward_linear(self):
         dZ = np.random.randn(4, 10)

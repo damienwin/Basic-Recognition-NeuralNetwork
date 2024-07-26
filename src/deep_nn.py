@@ -24,6 +24,13 @@ def relu(Z):
     cache = Z
     return A, cache
 
+def softmax(Z):
+    Z_shifted = Z - np.max(Z, axis=0, keepdims=True)  # To prevent overflow
+    exp_Z = np.exp(Z_shifted)
+    A = exp_Z / np.sum(exp_Z, axis=0, keepdims=True)
+    cache = Z
+    return A, cache
+
 def relu_backward(dA, cache):
     Z = cache
     dZ = np.array(dA, copy=True)
@@ -42,6 +49,22 @@ def sigmoid_backward(dA, cache):
     
     return dZ
 
+def softmax_backward(dAL, cache):
+    Z = cache
+    m = Z.shape[1]
+    dZ = dAL / m
+
+    return dZ
+
+def one_hot_encode(Y, num_classes):
+    Y = np.array(Y).astype(int)  # Ensure Y is an array of integers
+    Y = Y.reshape(-1)           # Flatten Y to be a 1D array if needed
+    if np.any(Y >= num_classes) or np.any(Y < 0):
+        raise ValueError("Labels must be in the range [0, num_classes-1]")
+    
+    Y_encoded = np.eye(num_classes)[Y]
+    return Y_encoded.T
+
 def forward_linear(A, W, b):
     Z = np.dot(W, A) + b
     cache = (A, W, b)
@@ -55,6 +78,9 @@ def forward_activation(A_prev, W, b, activation):
     elif activation == "relu":
         Z, linear_cache = forward_linear(A_prev, W, b)
         A, activation_cache = relu(Z)
+    elif activation == "softmax":
+        Z, linear_cache = forward_linear(A_prev, W, b)
+        A, activation_cache = softmax(Z)
     else:
         raise ValueError("Invalid activation function!")
 
@@ -66,23 +92,30 @@ def forward_propagation(X, parameters):
     caches = []
     A = X
     L = len(parameters) // 2  # number of layers in the network
+    activation = "sigmoid" if classification_type == "binary" else "softmax"
 
     # Forward propagation for each layer
     for l in range(1, L):
         A_prev = A
-        A, cache = forward_activation(A_prev, parameters['W' + str(l)], parameters['b' + str(l)], activation="relu")
+        A, cache = forward_activation(A_prev, parameters['W' + str(l)], parameters['b' + str(l)], "relu")
         caches.append(cache)
 
     #AL is final output layer
-    AL, cache = forward_activation(A, parameters['W' + str(L)], parameters['b' + str(L)], "sigmoid")
+    AL, cache = forward_activation(A, parameters['W' + str(L)], parameters['b' + str(L)], activation)
     caches.append(cache)
 
     return AL, caches
 
 def cost_function(AL, Y):
-    cost = -np.mean(np.multiply(Y, np.log(AL)) + np.multiply((1 - Y), np.log(1 - AL)))
-    cost = np.squeeze(cost)
-
+    if classification_type == "binary":
+        cost = -np.mean(np.multiply(Y, np.log(AL)) + np.multiply((1 - Y), np.log(1 - AL)))
+    elif classification_type == "multivariable":
+        epsilon = 1e-8  # Small constant to prevent log(0)
+        AL = np.clip(AL, epsilon, 1 - epsilon)  # Clip AL to avoid log(0) and division by zero
+        cost = -np.sum(Y * np.log(AL)) / Y.shape[1]  
+    else:
+        raise ValueError("Invalid classification type!")
+    
     return cost
 
 def backward_linear(dZ, cache):
@@ -104,6 +137,9 @@ def backward_activation(dA, cache, activation):
     elif activation == "sigmoid":
         dZ = sigmoid_backward(dA, activation_cache)
         dA_prev, dW, db = backward_linear(dZ, linear_cache)
+    elif activation == "softmax":
+        dZ = softmax_backward(dA, activation_cache)
+        dA_prev, dW, db = backward_linear(dZ, linear_cache)
     else:
         raise ValueError("Invalid activation function!")
 
@@ -113,14 +149,16 @@ def backward_activation(dA, cache, activation):
 def backward_propagation(AL, Y, caches):
     grads = {}
     L = len(caches)
-    Y = Y.reshape(AL.shape)
+    activation = "sigmoid" if classification_type == "binary" else "softmax"
     
-    # Back propagation of output layer
-    dAL = -(np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
+    if activation == "sigmoid":
+        dAL = -(np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
+    if activation == "softmax":
+        dAL = AL - Y
 
     # Gradient descent of output layer
     current_cache = caches[L - 1]
-    dW_temp, dA_prev_temp, db_temp = backward_activation(dAL, current_cache, "sigmoid")
+    dW_temp, dA_prev_temp, db_temp = backward_activation(dAL, current_cache, activation)
     grads["dW" + str(L)] = dW_temp
     grads["dA" + str(L-1)] = dA_prev_temp
     grads["db" + str(L)] = db_temp
@@ -144,9 +182,14 @@ def update_parameters(parameters, grads, learning_rate):
         
     return parameters
 
-def deep_nn_model(X, Y, num_iterations, layer_dims, learning_rate):
+def deep_nn_model(X, Y, num_iterations, layer_dims, learning_rate, classification_method):
     costs = []
     parameters = initialize_layer_parameters(layer_dims)
+    global classification_type
+    classification_type = classification_method
+
+    if classification_type == "multivariable":
+        Y = one_hot_encode(Y, layer_dims[-1])
 
     for i in range(0, num_iterations):
         AL, caches = forward_propagation(X, parameters)
