@@ -56,15 +56,6 @@ def softmax_backward(dAL, cache):
 
     return dZ
 
-def one_hot_encode(Y, num_classes):
-    Y = np.array(Y).astype(int)  # Ensure Y is an array of integers
-    Y = Y.reshape(-1)           # Flatten Y to be a 1D array if needed
-    if np.any(Y >= num_classes) or np.any(Y < 0):
-        raise ValueError("Labels must be in the range [0, num_classes-1]")
-    
-    Y_encoded = np.eye(num_classes)[Y]
-    return Y_encoded.T
-
 def forward_linear(A, W, b):
     Z = np.dot(W, A) + b
     cache = (A, W, b)
@@ -187,9 +178,6 @@ def deep_nn_model(X, Y, num_iterations, layer_dims, learning_rate, classificatio
     parameters = initialize_layer_parameters(layer_dims)
     global classification_type
     classification_type = classification_method
-
-    if classification_type == "multivariable":
-        Y = one_hot_encode(Y, layer_dims[-1])
 
     for i in range(0, num_iterations):
         AL, caches = forward_propagation(X, parameters)
