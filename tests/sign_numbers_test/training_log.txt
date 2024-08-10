@@ -1,0 +1,28 @@
+# Training size of full dataset (~2000)
+Iter     Alpha    Lambd    Train%     Test%    
+10000    1        0        84.42      77.74
+10000    0.1      0        55.25      47.74
+
+# Added momentum formula
+Iter     Alpha    Lambd    Beta     Train%     Test%    
+10000    1        0        0.99     81.34      72.90
+10000    1        0        0.9      83.56      76.77
+10000    1        0        0.8      85.10      77.74
+15000    1        0        0.8      88.24      79.35
+
+# Normalized data around 0 instead of 0 to 1  
+Iter     Alpha    Lambd    Beta     Train%     Test% 
+10000    1        0        0.8      95.32      80.32
+10000    1        0        0.9      95.49      81.94     
+10000    1        0.001    0.9      94.92      80.97
+10000    1        0.01     0.9      93.66      80.32
+10000    1        0.1      0.9      81.45      75.16
+10000    1        0.02     0.9      90.41      77.74  
+10000    1        0.015    0.9      90.92      80.00     
+
+# Added Adam optimization
+Iter     Alpha    Lambd    Train%     Test%    
+100      0.01     0        100.00     80.32     
+100      0.01     0.01     99.94      83.23     
+100      0.01     0.1      77.34      72.58     
+10000    0.001    0.05     96.35      82.58     
