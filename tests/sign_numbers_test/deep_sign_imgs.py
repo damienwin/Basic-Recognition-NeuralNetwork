@@ -8,31 +8,51 @@ import pickle
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
 from deep_nn import forward_propagation, deep_nn_model
 
-X = np.load("datasets/signdigits/X.npy")
-Y = np.load("datasets/signdigits/Y.npy")
+preprocessed_data_dir = "datasets/signdigits/preprocessed"
+X_train_flat_path = os.path.join(preprocessed_data_dir, "X_train_flat.npy")
+Y_train_path = os.path.join(preprocessed_data_dir, "Y_train.npy")
+X_test_flat_path = os.path.join(preprocessed_data_dir, "X_test_flat.npy")
+Y_test_path = os.path.join(preprocessed_data_dir, "Y_test.npy")
 
-# Split dataset into some training examples(15%) and shuffle data
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.15, random_state=42)
+# Check if preprocessed data exists
+if all(os.path.exists(path) for path in [X_train_flat_path, Y_train_path, X_test_flat_path, Y_test_path]):
+    X_train_flat = np.load(X_train_flat_path)
+    Y_train = np.load(Y_train_path)
+    X_test_flat = np.load(X_test_flat_path)
+    Y_test = np.load(Y_test_path)
+    print("Loaded preprocessed data.")
+else:
+    # Load original dataset
+    X = np.load("datasets/signdigits/X.npy")
+    Y = np.load("datasets/signdigits/Y.npy")
 
-m_train = X_train.shape[0]
-X_train_flat = X_train.reshape(m_train, -1).T
+    # Split dataset into training and test sets (15% test size)
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.15, random_state=42)
 
-m_test = X_test.shape[0]
-X_test_flat = X_test.reshape(m_test, -1).T
+    # Flatten the data
+    m_train = X_train.shape[0]
+    X_train_flat = X_train.reshape(m_train, -1).T
 
-Y_train = Y_train.T
-Y_test = Y_test.T
+    m_test = X_test.shape[0]
+    X_test_flat = X_test.reshape(m_test, -1).T
 
-print(X_train_flat.shape)
-print(Y_train.shape)
-print(X_test_flat.shape)
-print(Y_test.shape)
+    Y_train = Y_train.T
+    Y_test = Y_test.T
+
+    # Save preprocessed data for future use
+    if not os.path.exists(preprocessed_data_dir):
+        os.makedirs(preprocessed_data_dir)
+    np.save(X_train_flat_path, X_train_flat)
+    np.save(Y_train_path, Y_train)
+    np.save(X_test_flat_path, X_test_flat)
+    np.save(Y_test_path, Y_test)
+    print("Preprocessed data saved.")
 
 layer_dims = [4096, 1024, 256, 64, 10]
 classification_method="multivariable"
-num_iterations = 10000
+num_iterations = 5000
 learning_rate = 0.01
-lambd = 0.05
+lambd = 0.075
 
 parameters, _ = deep_nn_model(X_train_flat, Y_train, 
                               num_iterations=num_iterations, 
