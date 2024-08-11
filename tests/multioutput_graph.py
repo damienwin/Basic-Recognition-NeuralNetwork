@@ -41,9 +41,9 @@ Y = to_categorical(Y_unflat, num_classes=n_clusters).T
 
 # Define the model
 layer_dims = [12288, 64, 20, 10]
-parameters, _ = deep_nn_model(X, Y, num_iterations=1000, layer_dims=layer_dims, learning_rate=1, classification_method="multivariable")
+parameters, _ = deep_nn_model(X, Y, num_iterations=1000, layer_dims=layer_dims, learning_rate=1, classification_method="multivariable", lambd = 0, keep_prob = 0)
 
-"""def predict(X, parameters):
+def predict(X, parameters):
     
     AL, _ = forward_propagation(X, parameters)
     predictions = np.argmax(AL, axis=0)
@@ -82,5 +82,3 @@ def plot_decision_boundaries(X, Y, parameters, num_classes):
 
 # Plot decision boundaries
 plot_decision_boundaries(X, Y, parameters, num_classes=n_clusters)
-
-"""
