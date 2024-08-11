@@ -111,6 +111,35 @@ def forward_propagation(X, parameters, classification_type):
 
     return AL, caches
 
+def forward_propagation_with_dropout(X, parameters, keep_prob, classification_type):
+    caches = []
+    A = X
+    L = len(parameters) // 2
+    activation = "sigmoid" if classification_type == "binary" else "softmax"
+
+    for l in range(1, L):
+        A_prev = A
+        W = parameters['W' + str(l)]
+        b = parameters['b' + str(l)]
+        # Call each cache function to add Dropout matrices to caches
+        Z, linear_cache = forward_linear(A_prev, W, b)
+        A, activation_cache = relu(Z)
+        
+        # Apply dropout
+        D = np.random.rand(A.shape[0], A.shape[1]) < keep_prob
+        A = A * D                                    
+        A = A / keep_prob                        
+        cache = (linear_cache, activation_cache, D)                     
+        caches.append(cache)
+
+    # Output layer (no dropout)
+    WL = parameters['W' + str(L)]
+    bL = parameters['b' + str(L)]
+    AL, linear_cache = forward_activation(A, WL, bL, activation)
+    caches.append(linear_cache)
+
+    return AL, caches
+
 def cost_function(AL, Y):
     if classification_type == "binary":
         cost = -np.mean(np.multiply(Y, np.log(AL)) + np.multiply((1 - Y), np.log(1 - AL)))
@@ -132,7 +161,7 @@ def cost_function_with_regularization(AL, Y, parameters, lambd):
         W = parameters['W' + str(l)]
         L2_regularization_cost += np.sum(np.square(W))
     
-    L2_regularization_cost = 1/m * lambd/2 * L2_regularization_cost
+    L2_regularization_cost = lambd * L2_regularization_cost / (2 * m)
     cross_entropy_cost = cost_function(AL, Y)
     cost = cross_entropy_cost + L2_regularization_cost
 
@@ -227,6 +256,40 @@ def backward_propagation_with_regularization(AL, Y, caches, lambd):
 
     return grads
 
+def backward_propagation_with_dropout(AL, Y, caches, keep_prob, classification_type):
+    grads = {}
+    L = len(caches)
+    activation = "sigmoid" if classification_type == "binary" else "softmax"
+    
+    if activation == "sigmoid":
+        dAL = -(np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
+    if activation == "softmax":
+        dAL = AL - Y
+
+    current_cache = caches[L - 1]
+    dW_temp, dA_prev_temp, db_temp = backward_activation(dAL, current_cache, activation)
+    grads["dW" + str(L)] = dW_temp
+    grads["dA" + str(L-1)] = dA_prev_temp
+    grads["db" + str(L)] = db_temp
+
+    for l in reversed(range(L-1)):
+        current_cache = caches[l]
+        linear_cache, activation_cache, D = current_cache
+        cache_no_D = (linear_cache, activation_cache)
+        dA_prev_temp = grads["dA" + str(l + 1)]
+        
+        # Apply dropout mask and scaling
+        dA_prev_temp = dA_prev_temp * D
+        dA_prev_temp = dA_prev_temp / keep_prob
+        
+        dW_temp, dA_prev_temp, db_temp = backward_activation(dA_prev_temp, cache_no_D, "relu")
+        grads["dW" + str(l + 1)] = dW_temp
+        grads["dA" + str(l)] = dA_prev_temp  
+        grads["db" + str(l + 1)] = db_temp
+
+    return grads
+
+
 def update_parameters_with_adam(parameters, grads, v, s, learning_rate):
     L = len(parameters) // 2 
     v_corrected = {}
@@ -256,7 +319,7 @@ def update_parameters_with_adam(parameters, grads, v, s, learning_rate):
 
     return parameters, v, s
 
-def deep_nn_model(X, Y, num_iterations, layer_dims, learning_rate, classification_method, lambd):
+def deep_nn_model(X, Y, num_iterations, layer_dims, learning_rate, classification_method, lambd, keep_prob):
     costs = []
     parameters = initialize_layer_parameters(layer_dims)
     v, s = initialize_adam_params(parameters)
@@ -264,14 +327,22 @@ def deep_nn_model(X, Y, num_iterations, layer_dims, learning_rate, classificatio
     classification_type = classification_method
 
     for i in range(0, num_iterations):
-        AL, caches = forward_propagation(X, parameters, classification_type)
- 
-        if lambd == 0:
+        # Using keep_prob = 0 as a "don't use dropout" signal
+        if lambd == 0 and keep_prob == 0:
+            AL, caches = forward_propagation(X, parameters, classification_type)
             cost = cost_function(AL, Y)
             grads = backward_propagation(AL, Y, caches)
-        else:
+        elif lambd != 0 and keep_prob == 0:
+            AL, caches = forward_propagation(X, parameters, classification_type)
             cost = cost_function_with_regularization(AL, Y, parameters, lambd)
             grads = backward_propagation_with_regularization(AL, Y, caches, lambd)
+        elif lambd == 0 and keep_prob!= 0:
+            AL, caches = forward_propagation_with_dropout(X, parameters, keep_prob, classification_type)
+            cost = cost_function(AL, Y)
+            grads = backward_propagation_with_dropout(AL, Y, caches, keep_prob, classification_type)
+        else:
+            print("Not implementing both")
+            return None, None
     
         parameters, v, s = update_parameters_with_adam(parameters, grads, v, s, learning_rate)
 

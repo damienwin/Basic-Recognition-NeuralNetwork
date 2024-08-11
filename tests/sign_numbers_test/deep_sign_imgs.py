@@ -48,18 +48,20 @@ else:
     np.save(Y_test_path, Y_test)
     print("Preprocessed data saved.")
 
-layer_dims = [4096, 1024, 256, 64, 10]
+layer_dims = [4096, 512, 64, 10]
 classification_method="multivariable"
-num_iterations = 5000
+num_iterations = 10000
 learning_rate = 0.01
-lambd = 0.075
+lambd = 0
+keep_prob = 0.6
 
 parameters, _ = deep_nn_model(X_train_flat, Y_train, 
                               num_iterations=num_iterations, 
                               layer_dims=layer_dims, 
                               learning_rate=learning_rate, 
                               classification_method=classification_method, 
-                              lambd=lambd)
+                              lambd=lambd,
+                              keep_prob=keep_prob)
 
 def predict(X, parameters):
     AL, _ = forward_propagation(X, parameters, classification_type="multivariable")
@@ -81,18 +83,11 @@ test_predictions = predict(X_test_flat, parameters)
 test_accuracy = calculate_accuracy(test_predictions, Y_test)
 print(f"Test Accuracy: {test_accuracy * 100:.2f}%")
 
-def log_results(file_path, num_iterations, learning_rate, lambd, train_accuracy, test_accuracy):
-    # Check if the file exists
-    if not os.path.exists(file_path):
-        # If the file doesn't exist, create it and add a header
-        with open(file_path, 'w') as f:
-            f.write(f"{'Iter':<8} {'Alpha':<8} {'Lambd':<8} {'Beta':<8} {'Train%':<10} {'Test%':<10}\n")
-            f.close()
-    
+def log_results(file_path, num_iterations, learning_rate, lambd, keep_prob, train_accuracy, test_accuracy):
     # Append the results to the file
     with open(file_path, 'a') as f:
-        f.write(f"{num_iterations:<8} {learning_rate:<8} {lambd:<8} {train_accuracy * 100:<10.2f} {test_accuracy * 100:<10.2f}\n")
+        f.write(f"{num_iterations:<8} {learning_rate:<8} {lambd:<8} {keep_prob:<8} {train_accuracy * 100:<10.2f} {test_accuracy * 100:<10.2f}\n")
         print("Successfully logged")
 
 log_file_path = "tests/sign_numbers_test/training_log.txt"
-log_results(log_file_path, num_iterations, learning_rate, lambd, train_accuracy, test_accuracy)
+log_results(log_file_path, num_iterations, learning_rate, lambd, keep_prob, train_accuracy, test_accuracy)
